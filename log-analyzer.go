@@ -7,13 +7,22 @@
 package main
 
 import (
-	"fmt" // for user-facing messages
-	"log" // for fatal errors that terminate execution
-	"os"  // access to command-line arguments
+	"fmt"     // for user-facing messages
+	"log"     // for fatal errors that terminate execution
+	"os"      // access to command-line arguments
+	"runtime" // to discover CPU count
+	"sync"    // synchronization primitives
 
 	"log-analyzer/parser" // custom package for parsing log lines
 	"log-analyzer/stats"  // custom package for collecting statistics
 )
+
+// workerCount returns a suitable number of goroutines to run in parallel.
+// We choose the number of logical CPUs, but allow the caller to override
+// via the GOMAXPROCS environment variable if desired.
+func workerCount() int {
+	return runtime.GOMAXPROCS(0)
+}
 
 func main() {
 	// Expect exactly one argument: the path to the log file.
@@ -37,16 +46,55 @@ func main() {
 	// API for incrementing counters and calculating latencies.
 	statsCollector := stats.NewStats()
 
-	// Process each line from the file. Malformed lines are ignored but do not
-	// stop the program.
-	for _, rawLine := range lines {
-		entry, err := parser.ParseLine(rawLine)
-		if err != nil {
-			// Skip lines that cannot be parsed. These are treated as noise.
-			continue
+	// Channel where parsed entries are sent for aggregation.
+	entryChan := make(chan *parser.LogEntry, 1000)
+	var wg sync.WaitGroup
+
+	// Launch a goroutine that consumes entries and updates stats.
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for e := range entryChan {
+			statsCollector.AddEntry(e)
 		}
-		statsCollector.AddEntry(entry)
+	}()
+
+	// Spawn a pool of workers to parse lines concurrently.
+	workers := workerCount()
+	var parseWG sync.WaitGroup
+	parseWG.Add(workers)
+
+	lineChan := make(chan string, 1000)
+
+	// worker function
+	for i := 0; i < workers; i++ {
+		go func() {
+			defer parseWG.Done()
+			for raw := range lineChan {
+				entry, err := parser.ParseLine(raw)
+				if err != nil {
+					continue // malformed, ignore
+				}
+				entryChan <- entry
+			}
+		}()
 	}
+
+	// Feed lines into the line channel
+	go func() {
+		for _, raw := range lines {
+			lineChan <- raw
+		}
+		close(lineChan)
+	}()
+
+	// wait for parsers to finish, then close entry channel so stats goroutine
+	// can exit
+	parseWG.Wait()
+	close(entryChan)
+
+	// wait for stats aggregation to complete
+	wg.Wait()
 
 	// After processing all lines, print a summary to stdout. The output
 	// format is handled by the stats package.

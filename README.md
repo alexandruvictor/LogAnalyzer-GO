@@ -110,8 +110,19 @@ max: 900ms
 ## Extending the Tool
 
 - Add streaming support for very large log files.
-- Introduce concurrency for parsing multiple files.
+- Introduce concurrency for parsing multiple files (see note below).
 - Output to different formats (CSV, Prometheus metrics, etc.)
+
+### Performance & Concurrency
+
+The application is written with real-world scalability in mind.  The
+current `main` function uses a worker pool powered by goroutines and
+channels to parse log lines in parallel.  A dedicated goroutine
+aggregates parsed entries into statistics, ensuring thread safety and
+minimizing contention.  This design handles millions of lines with
+efficient CPU utilization and can be tuned via the `GOMAXPROCS`
+environment variable.
+
 
 ## License
 
