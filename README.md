@@ -53,15 +53,17 @@ log-analyzer/
    go build -o log-analyzer log-analyzer.go
    ```
 
-3. Run against a log file:
+3. Run against one or more log files (or directories containing them):
    ```sh
    ./log-analyzer logs/access.log
+   ./log-analyzer logs/              # process all files in logs/
+   ./log-analyzer file1.log file2.log
    ```
 
    Additional options:
    ```sh
-   ./log-analyzer --json logs/access.log          # print JSON
-   ./log-analyzer --csv=out.csv logs/access.log   # write CSV report
+   ./log-analyzer --json logs/                    # print JSON
+   ./log-analyzer --csv=out.csv logs/            # write CSV report
    ```
 
 ### Sample Log (`logs/access.log`)

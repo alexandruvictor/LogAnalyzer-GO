@@ -41,14 +41,40 @@ func main() {
 		return
 	}
 
-	// Path of the log file provided by the user.
-	logFilePath := flag.Arg(0)
-	// Read all lines from the file. A failure here is a fatal error;
-	// the program cannot continue without input.
-	lines, err := parser.ReadLines(logFilePath)
-	if err != nil {
-		log.Fatalf("failed to read log file %s: %v", logFilePath, err)
+	// collect all lines from input paths (files or directories)
+	var allLines []string
+	for _, path := range flag.Args() {
+		info, err := os.Stat(path)
+		if err != nil {
+			log.Fatalf("invalid path %s: %v", path, err)
+		}
+		if info.IsDir() {
+			entries, err := os.ReadDir(path)
+			if err != nil {
+				log.Fatalf("cannot read directory %s: %v", path, err)
+			}
+			for _, e := range entries {
+				if e.IsDir() {
+					continue
+				}
+				filePath := path + string(os.PathSeparator) + e.Name()
+				lines, err := parser.ReadLines(filePath)
+				if err != nil {
+					logrus.WithField("file", filePath).Warnf("skipping unreadable file: %v", err)
+					continue
+				}
+				allLines = append(allLines, lines...)
+			}
+		} else {
+			lines, err := parser.ReadLines(path)
+			if err != nil {
+				log.Fatalf("failed to read log file %s: %v", path, err)
+			}
+			allLines = append(allLines, lines...)
+		}
 	}
+	// use allLines for processing
+	lines := allLines
 
 	// Initialize statistics collector. The stats package exposes a simple
 	// API for incrementing counters and calculating latencies.
