@@ -1,0 +1,12 @@
+# Binaries
+*.exe
+*.exe~
+*.out
+*.test
+
+# Vendor
+/vendor/
+
+# OS files
+.DS_Store
+Thumbs.db
