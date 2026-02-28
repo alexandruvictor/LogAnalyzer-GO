@@ -148,6 +148,15 @@ minimizing contention.  This design handles millions of lines with
 efficient CPU utilization and can be tuned via the `GOMAXPROCS`
 environment variable.
 
+### Logging & Error Handling
+
+Rather than ignoring malformed entries silently, the analyzer records
+each parsing error to a separate `errors.log` file.  It uses the
+`logrus` logging library with structured output; you can inspect the
+error level, timestamp, and the offending line.  This demonstrates
+usage of a more advanced logging framework and provides traceability
+for noisy input data.
+
 
 ## License
 

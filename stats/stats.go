@@ -77,7 +77,6 @@ func (s *Stats) PrintSummary() {
 	}
 }
 
-
 // ToJSON returns the statistics serialized as JSON. The structure matches the
 // example shown in the README.
 func (s *Stats) ToJSON() ([]byte, error) {
@@ -120,7 +119,7 @@ func (s *Stats) ToCSV(w io.Writer) error {
 		}
 	}
 	if s.TotalLines > 0 {
-		if err := writer.Write([]string{"latency_avg", fmt.Sprint(s.LatencySum/s.TotalLines)}); err != nil {
+		if err := writer.Write([]string{"latency_avg", fmt.Sprint(s.LatencySum / s.TotalLines)}); err != nil {
 			return err
 		}
 		if err := writer.Write([]string{"latency_max", fmt.Sprint(s.LatencyMax)}); err != nil {

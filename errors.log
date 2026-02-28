@@ -1,0 +1,4 @@
+time="2026-02-28T12:04:59+02:00" level=error msg="parse failed" error="parsing time \"SOME\" as \"2006-01-02T15:04:05Z07:00\": cannot parse \"SOME\" as \"2006\"" line="SOME RANDOM TEXT NOT A LOG LINE\r"
+time="2026-02-28T12:04:59+02:00" level=error msg="parse failed" error="parsing time \"SOME\" as \"2006-01-02T15:04:05Z07:00\": cannot parse \"SOME\" as \"2006\"" line="SOME RANDOM TEXT NOT A LOG LINE\r"
+time="2026-02-28T12:04:59+02:00" level=error msg="parse failed" error="malformed line: insufficient fields" line=
+time="2026-02-28T12:04:59+02:00" level=error msg="parse failed" error="parsing time \"SOME\" as \"2006-01-02T15:04:05Z07:00\": cannot parse \"SOME\" as \"2006\"" line="SOME RANDOM TEXT NOT A LOG LINE\r"

@@ -57,29 +57,29 @@ func BenchmarkStats_AddEntry(b *testing.B) {
 	}
 }
 func TestStats_ToJSON(t *testing.T) {
-    s := NewStats()
-    s.AddEntry(makeEntry("ERROR", 500, "/api", 100))
-    data, err := s.ToJSON()
-    if err != nil {
-        t.Fatalf("unexpected JSON error: %v", err)
-    }
-    if !strings.Contains(string(data), "\"total_lines\": 1") {
-        t.Error("JSON output missing total_lines")
-    }
+	s := NewStats()
+	s.AddEntry(makeEntry("ERROR", 500, "/api", 100))
+	data, err := s.ToJSON()
+	if err != nil {
+		t.Fatalf("unexpected JSON error: %v", err)
+	}
+	if !strings.Contains(string(data), "\"total_lines\": 1") {
+		t.Error("JSON output missing total_lines")
+	}
 }
 
 func TestStats_ToCSV(t *testing.T) {
-    s := NewStats()
-    s.AddEntry(makeEntry("ERROR", 500, "/api", 100))
-    var buf strings.Builder
-    if err := s.ToCSV(&buf); err != nil {
-        t.Fatalf("CSV error: %v", err)
-    }
-    out := buf.String()
-    if !strings.Contains(out, "total_lines,1") {
-        t.Error("CSV output missing total_lines")
-    }
-    if !strings.Contains(out, "error,500 /api:1") {
-        t.Error("CSV output missing error line")
-    }
+	s := NewStats()
+	s.AddEntry(makeEntry("ERROR", 500, "/api", 100))
+	var buf strings.Builder
+	if err := s.ToCSV(&buf); err != nil {
+		t.Fatalf("CSV error: %v", err)
+	}
+	out := buf.String()
+	if !strings.Contains(out, "total_lines,1") {
+		t.Error("CSV output missing total_lines")
+	}
+	if !strings.Contains(out, "error,500 /api:1") {
+		t.Error("CSV output missing error line")
+	}
 }
