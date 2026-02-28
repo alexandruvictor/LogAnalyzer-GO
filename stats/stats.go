@@ -1,7 +1,11 @@
 package stats
 
 import (
+	"encoding/csv"
+	"encoding/json"
 	"fmt"
+	"io"
+	"strings"
 
 	"log-analyzer/parser" // used to interpret LogEntry values
 )
@@ -48,7 +52,7 @@ func (s *Stats) AddEntry(entry *parser.LogEntry) {
 
 // PrintSummary writes a human-readable report to stdout.  This is the default
 // display used by the CLI.  In practice the same Stats object can also be
-// serialized to JSON if the user requests it (see README).
+// serialized to JSON or CSV if the user requests it (see README).
 func (s *Stats) PrintSummary() {
 	fmt.Printf("Total lines processed: %d\n", s.TotalLines)
 
@@ -62,5 +66,67 @@ func (s *Stats) PrintSummary() {
 	if s.TotalLines > 0 {
 		avgLatency := s.LatencySum / s.TotalLines
 		fmt.Printf("\nLatency:\navg: %dms\nmax: %dms\n", avgLatency, s.LatencyMax)
+
+		// simple ASCII bar chart scaled down by factor 10
+		scale := 10
+		avgBar := strings.Repeat("=", avgLatency/scale)
+		maxBar := strings.Repeat("=", s.LatencyMax/scale)
+		fmt.Println("\nLatency graph (each '=' is", scale, "ms):")
+		fmt.Printf("avg [%s]\n", avgBar)
+		fmt.Printf("max [%s]\n", maxBar)
 	}
+}
+
+
+// ToJSON returns the statistics serialized as JSON. The structure matches the
+// example shown in the README.
+func (s *Stats) ToJSON() ([]byte, error) {
+	type out struct {
+		TotalLines int            `json:"total_lines"`
+		Errors     map[string]int `json:"errors"`
+		Latency    struct {
+			Avg int `json:"avg"`
+			Max int `json:"max"`
+		} `json:"latency"`
+	}
+	result := out{
+		TotalLines: s.TotalLines,
+		Errors:     s.TotalErrors,
+	}
+	if s.TotalLines > 0 {
+		result.Latency.Avg = s.LatencySum / s.TotalLines
+		result.Latency.Max = s.LatencyMax
+	}
+	return json.MarshalIndent(result, "", "  ")
+}
+
+// ToCSV writes the statistics in CSV format to the provided writer. The
+// output begins with headers and includes a row per error key followed by
+// latency lines.
+func (s *Stats) ToCSV(w io.Writer) error {
+	writer := csv.NewWriter(w)
+	// headers
+	if err := writer.Write([]string{"metric", "value"}); err != nil {
+		return err
+	}
+	// total lines
+	if err := writer.Write([]string{"total_lines", fmt.Sprint(s.TotalLines)}); err != nil {
+		return err
+	}
+	// errors
+	for k, v := range s.TotalErrors {
+		if err := writer.Write([]string{"error", fmt.Sprintf("%s:%d", k, v)}); err != nil {
+			return err
+		}
+	}
+	if s.TotalLines > 0 {
+		if err := writer.Write([]string{"latency_avg", fmt.Sprint(s.LatencySum/s.TotalLines)}); err != nil {
+			return err
+		}
+		if err := writer.Write([]string{"latency_max", fmt.Sprint(s.LatencyMax)}); err != nil {
+			return err
+		}
+	}
+	writer.Flush()
+	return writer.Error()
 }

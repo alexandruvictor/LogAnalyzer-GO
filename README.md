@@ -58,6 +58,12 @@ log-analyzer/
    ./log-analyzer logs/access.log
    ```
 
+   Additional options:
+   ```sh
+   ./log-analyzer --json logs/access.log          # print JSON
+   ./log-analyzer --csv=out.csv logs/access.log   # write CSV report
+   ```
+
 ### Sample Log (`logs/access.log`)
 
 ```
@@ -90,7 +96,7 @@ avg: 387ms
 max: 900ms
 ```
 
-**JSON Output (`--json`):**
+**JSON Output (`--json` flag):**
 ```json
 {
   "total_lines": 10,
@@ -106,6 +112,25 @@ max: 900ms
   }
 }
 ```
+
+**CSV Output (`--csv path/to/file.csv`):**
+```
+metric,value
+ total_lines,10
+ error,500 /api/login:1
+ ...
+ latency_avg,387
+ latency_max,900
+```
+
+### Summary Report & Graphing
+
+A standalone report summarizing total lines, error counts per endpoint and
+latency statistics can be generated programmatically using the `Stats`
+methods (`ToJSON`, `ToCSV`).  For visualizing latency trends the README
+includes an ASCII chart example, but any graphing library can consume the
+JSON output to produce richer visuals (e.g. via Python or Excel).   The
+current CLI does not produce images, keeping the code lightweight.
 
 ## Extending the Tool
 

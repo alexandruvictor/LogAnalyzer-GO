@@ -7,14 +7,20 @@
 package main
 
 import (
-	"fmt"     // for user-facing messages
-	"log"     // for fatal errors that terminate execution
-	"os"      // access to command-line arguments
-	"runtime" // to discover CPU count
-	"sync"    // synchronization primitives
+    "flag"    // command-line flags
+    "fmt"     // for user-facing messages
+    "log"     // for fatal errors that terminate execution
+    "os"      // access to command-line arguments and file I/O
+    "runtime" // to discover CPU count
+    "sync"    // synchronization primitives
 
-	"log-analyzer/parser" // custom package for parsing log lines
-	"log-analyzer/stats"  // custom package for collecting statistics
+    "log-analyzer/parser" // custom package for parsing log lines
+    "log-analyzer/stats"  // custom package for collecting statistics
+)
+
+var (
+    jsonFlag = flag.Bool("json", false, "output results in JSON format to stdout")
+    csvFile  = flag.String("csv", "", "path to write CSV report")
 )
 
 // workerCount returns a suitable number of goroutines to run in parallel.
@@ -25,16 +31,15 @@ func workerCount() int {
 }
 
 func main() {
-	// Expect exactly one argument: the path to the log file.
-	// If missing, show a usage message and exit gracefully.
-	if len(os.Args) < 2 {
-		fmt.Println("Usage: log-analyzer <logfile>")
-		return
-	}
+    flag.Parse()
 
-	// Path of the log file provided by the user.
-	logFilePath := os.Args[1]
+    if flag.NArg() < 1 {
+        fmt.Println("Usage: log-analyzer [--json] [--csv=file] <logfile>")
+        return
+    }
 
+    // Path of the log file provided by the user.
+    logFilePath := flag.Arg(0)
 	// Read all lines from the file. A failure here is a fatal error;
 	// the program cannot continue without input.
 	lines, err := parser.ReadLines(logFilePath)
@@ -99,4 +104,24 @@ func main() {
 	// After processing all lines, print a summary to stdout. The output
 	// format is handled by the stats package.
 	statsCollector.PrintSummary()
+
+    // optional exports
+    if *jsonFlag {
+        data, err := statsCollector.ToJSON()
+        if err != nil {
+            log.Fatalf("failed to generate JSON: %v", err)
+        }
+        fmt.Println(string(data))
+    }
+
+    if *csvFile != "" {
+        f, err := os.Create(*csvFile)
+        if err != nil {
+            log.Fatalf("unable to create csv file: %v", err)
+        }
+        defer f.Close()
+        if err := statsCollector.ToCSV(f); err != nil {
+            log.Fatalf("csv export failed: %v", err)
+        }
+    }
 }
